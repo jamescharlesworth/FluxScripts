@@ -5,25 +5,24 @@
     <title>FluxUI Report</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
-    <meta name="author" content="Wesley Hales">
 
-    <!-- Le styles -->
     <link href="http://loadreport.wesleyhales.com/bootstrap/css/bootstrap.css" rel="stylesheet">
+    <link href="http://loadreport.wesleyhales.com/bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!--[if lt IE 9]>
+    <script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
     <style>
         body {
             padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
         }
 
-        .highlight {
+        .highlight,
+        .table-striped tbody tr:nth-child(odd) td.highlight{
             background-color: #81c9ec;
         }
     </style>
-    <link href="http://loadreport.wesleyhales.com/bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
-
-    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
-    <!--[if lt IE 9]>
-    <script type="text/javascript" src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
 
 
 </head>
@@ -32,7 +31,7 @@
 <div class="container-fluid">
 
     <div class="row-fluid" >
-        <div class="span6">
+        <div class="span12">
             <h2>wesleyhales.com</h2>
         </div>
     </div>
@@ -49,13 +48,17 @@
             <h3>Total Resource Time</h3>
             <canvas id="resourceTime" height="250" width="700"></canvas>
 
-            <div id="report">
-                <div id="formProgress"></div>
-            </div>
         </div>
         <div class="span6">
             <span id="commitInfo"></span>
             <iframe id="commitReport1" width="600px" height="800px" seamless></iframe>
+        </div>
+    </div>
+    <div class="row-fluid" >
+        <div class="span12">
+            <div id="report">
+                <div id="formProgress"></div>
+            </div>
         </div>
     </div>
     <hr>
@@ -74,11 +77,8 @@
     </div>
 
 
-</div><!--/.fluid-container-->
+</div>
 
-<!-- Le javascript
-================================================== -->
-<!-- Placed at the end of the document so the pages load faster -->
 <script src="http://loadreport.wesleyhales.com/bootstrap/js/jquery.js"></script>
 <script src="http://loadreport.wesleyhales.com/bootstrap/js/bootstrap-transition.js"></script>
 <script src="http://loadreport.wesleyhales.com/bootstrap/js/bootstrap-alert.js"></script>
@@ -166,7 +166,7 @@
                         if(thisreport.hasOwnProperty(key))
                         {
                             //todo - remove date and time after a few commits - legacy stuff
-                            if(key !== 'commitId' && key !== 'date' && key !== 'time' && key !== 'taskName' && key !== 'phantomCacheEnabled'){
+                            if(key !== 'commitId' && key !== 'url' && key !== 'taskName' && key !== 'phantomCacheEnabled'){
                                 var htext = key.replace(/([A-Z])/g, " $1");
                                 htext = (htext.charAt(0).toUpperCase() + htext.slice(1));
                                 $header.append('<th>' + htext + '</th>');
@@ -207,7 +207,7 @@
 
                     //put everything else in a cell
                     //todo - remove date and time after a few commits - legacy stuff
-                    }else if(key2 !== 'date' && key2 !== 'time' && key2 !== 'taskName' && key2 !== 'phantomCacheEnabled'){
+                    }else if(key2 !== 'url' && key2 !== 'taskName' && key2 !== 'phantomCacheEnabled'){
 
                         var cellVal = thisreport[key2],
                                 append = true;
@@ -273,14 +273,17 @@
 //                        $('#myModal').modal('toggle');
 //                    },2000)
 //                });
+//                $('#myModal').modal('toggle');
 
                 document.getElementById('commitReport1').src = 'speedreports/' + id + '.html';
                 document.getElementById('commitReport1').width = '102%';
                 document.getElementById('commitReport1').style.display = '';
-
+                console.log(id)
                 $('#' + id).children().toggleClass('highlight');
-                $('#' + prevSelectedID).children().toggleClass('highlight')
-//                $('#myModal').modal('toggle');
+                if(prevSelectedID){
+                    console.log('prevSelectedID',prevSelectedID)
+                    $('#' + prevSelectedID).children().toggleClass('highlight')
+                }
                 prevSelectedID = id;
             }
             console.log(lineChartData2)
@@ -329,19 +332,6 @@
 
 </script>
 
-<script type="text/javascript">
 
-//    var _gaq = _gaq || [];
-//    _gaq.push(['_setAccount', 'UA-1241000-11']);
-//    _gaq.push(['_setDomainName', 'wesleyhales.com']);
-//    _gaq.push(['_trackPageview']);
-//
-//    (function() {
-//        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-//        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-//        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-//    })();
-
-</script>
 </body>
 </html>
