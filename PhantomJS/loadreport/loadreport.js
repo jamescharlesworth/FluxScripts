@@ -71,16 +71,46 @@ var loadreport = {
                 //     }
                 // }, 5);
 
+                
+
                 //The DOMContentLoaded event is fired when the document has been completely 
                 //loaded and parsed, without waiting for stylesheets, images, and subframes 
                 //to finish loading
                 document.addEventListener("DOMContentLoaded", function() {
+
                     console.log('DOMContentLoaded-' + (new Date().getTime() - startTime));
                 }, false);
 
                 //detect a fully-loaded page
                 window.addEventListener("load", function() {
-                    console.log('onload-' + (new Date().getTime() - startTime));
+                    if (typeof require !== 'undefined') {
+                        var modules = [],
+                            scriptsLoaded = 0,
+                            onResourceLoad = function( context, map, depMaps ) {
+                                var previousModule = modules[ modules.length - 1 ],
+                                    p;
+                                if (previousModule) {
+                                    p = previousModule.timestamp;
+                                } else {
+                                    p = new Date().getTime();
+                                }
+                                var t = new Date().getTime();
+                                var obj = {
+                                    name: map.name,
+                                    count: scriptsLoaded++,
+                                    timestamp: t,
+                                    time: t - p
+                                };
+                                modules.push(obj);
+                                console.log( 'performance-' + JSON.stringify(obj) );
+                            };
+
+                        require.onResourceLoad = function(context, map, depMaps) {
+                            onResourceLoad(context, map, depMaps)
+                        };
+                    }
+
+                    console.log('onload-' + (new Date().getTime() - (startTime || now)));
                 }, false);
 
                 //check for JS errors
@@ -265,6 +295,7 @@ var loadreport = {
     load: function (config, task, scope) {
         var page = WebPage.create(),
             pagetemp = WebPage.create(),
+            self     = this,
             event;
 
         if (config.userAgent && config.userAgent != "default") {
@@ -273,6 +304,9 @@ var loadreport = {
             }
             page.settings.userAgent = config.userAgent;
         }
+
+        page.viewportSize = config.viewportSize;
+
         ['onInitialized', 'onLoadStarted', 'onResourceRequested', 'onResourceReceived']
             .forEach(function (event) {
                 if (task[event]) {
@@ -299,23 +333,31 @@ var loadreport = {
                 } else {
                     task.onLoadFinished.call(scope, page, config, status);
                 }
-                phantom.exit();
+                setTimeout(function(){
+                    phantom.exit();
+                }, config.wait || 0);
+                
 
                 page = WebPage.create();
                 doPageLoad();
             };
         } else {
-            page.onLoadFinished = function (status) {
+            page.onLoadFinished = function (status) { 
                 phantom.exit();
             };
         }
         page.settings.localToRemoteUrlAccessEnabled = true;
         page.settings.webSecurityEnabled = false;
         page.onConsoleMessage = function (msg) {
-            console.log(msg)
+
             if (msg.indexOf('jserror-') >= 0){
                 loadreport.performance.evalConsoleErrors.push(msg.substring('jserror-'.length,msg.length));
-            }else{
+            } else if (msg.indexOf('performance-') >= 0) {
+                var str = msg.substring(msg.indexOf('-')+1, msg.length);
+                var obj = JSON.parse(str);
+                self.addToPerformanceFile({name:obj.name, time: obj.time},false)
+                //self.printToFile(config,{name:obj.name, time: obj.time},'performancereport','csv',phantom.args.indexOf('wipe') >= 0);
+            } else{
                 if (msg.indexOf('loading-') >= 0){
                     loadreport.performance.evalConsole.loading = msg.substring('loading-'.length,msg.length);
                 } else if (msg.indexOf('interactive-') >= 0){
@@ -465,6 +507,33 @@ var loadreport = {
             //subtract the time it took to render this image
             this.performance.timer = this.timerEnd(start) - this.performance.count1;
         }
+    },
+
+    addToPerformanceFile: function(report, createNew) {
+        //check the file exists, if not create it
+        var myfile = 'reports/performance.json';
+        if (createNew || !fs.exists(myfile)) {
+            f = fs.open(myfile, "w");
+            f.writeLine(JSON.stringify({},null,'\t'));
+            f.close();
+        }
+        //read the file into JSON Obj
+        if (!createNew && fs.exists(myfile)) {
+            var data =fs.read(myfile);
+            var contentsObj = JSON.parse(data);
+            if (typeof contentsObj[report.name] === 'undefined') {
+                contentsObj[report.name]  = {times: []};
+            }
+            contentsObj[report.name].times.push(report.time);
+            fs.remove(myfile);
+            f = fs.open(myfile, "w");
+            f.writeLine(JSON.stringify(contentsObj,null,'\t'));
+            f.close();
+        }
+
+        //add to the value
+
+        //write to the file
     },
 
     printToFile: function(config,report,filename,extension,createNew) {
