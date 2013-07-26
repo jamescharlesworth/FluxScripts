@@ -87,19 +87,12 @@ var loadreport = {
                         var modules = [],
                             scriptsLoaded = 0,
                             onResourceLoad = function( context, map, depMaps ) {
-                                var previousModule = modules[ modules.length - 1 ],
-                                    p;
-                                if (previousModule) {
-                                    p = previousModule.timestamp;
-                                } else {
-                                    p = new Date().getTime();
-                                }
                                 var t = new Date().getTime();
                                 var obj = {
                                     name: map.name,
                                     count: scriptsLoaded++,
                                     timestamp: t,
-                                    time: t - p
+                                    time: t - now
                                 };
                                 modules.push(obj);
                                 console.log( 'performance-' + JSON.stringify(obj) );
@@ -514,17 +507,27 @@ var loadreport = {
         var myfile = 'reports/performance.json';
         if (createNew || !fs.exists(myfile)) {
             f = fs.open(myfile, "w");
-            f.writeLine(JSON.stringify({},null,'\t'));
+            var r = {reports:{},runTimes:[]};
+            f.writeLine(JSON.stringify(r,null,'\t'));
             f.close();
+
         }
         //read the file into JSON Obj
         if (!createNew && fs.exists(myfile)) {
             var data =fs.read(myfile);
             var contentsObj = JSON.parse(data);
-            if (typeof contentsObj[report.name] === 'undefined') {
-                contentsObj[report.name]  = {times: []};
+            if (typeof contentsObj.reports[report.name] === 'undefined') {
+                contentsObj.reports[report.name]  = {times: []};
             }
-            contentsObj[report.name].times.push(report.time);
+            var d = new Date(),
+                iso = d.toISOString();
+
+            if (contentsObj.reports[report.name].times.length === contentsObj.runTimes.length) {
+                contentsObj.runTimes.push(iso)
+            }
+
+            contentsObj.reports[report.name].times.push(report.time);
+
             fs.remove(myfile);
             f = fs.open(myfile, "w");
             f.writeLine(JSON.stringify(contentsObj,null,'\t'));
